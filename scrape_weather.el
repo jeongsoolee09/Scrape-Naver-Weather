@@ -77,4 +77,18 @@
 ;;; Organize the information on a new org-buffer.
 
 
+(defun create-buffer ()
+  (let ((new-buffer (set-buffer (generate-new-buffer "Naver Weather"))))
+    (with-current-buffer new-buffer
+      (org-mode))
+    new-buffer))
+
+
+(defun create-org-table (buffer)
+  )
+
+;; TODO draw a nice table containing information retrieved by get-hourly-weather.
+;; TODO find a means to calculate the table width
+
+
 ;;; scrape_weather.el ends here
