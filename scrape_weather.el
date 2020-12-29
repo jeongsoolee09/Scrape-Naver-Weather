@@ -93,13 +93,15 @@
       (info-to-string-inner (concat acc ymdt " " tmpr "도 " weather "\n") (cdr list)))))
 
 
-(defun info-to-string ()
-  (info-to-string-inner "" (seq-take (get-hourly-weather (parse-naver-weather-html)) 13)))
+(defun info-to-string (info)
+  (info-to-string-inner "" (seq-take info 13)))
 
 
 (defun display-hourly-weather ()
   (interactive)
-  (message (info-to-string)))
+  (-> (get-hourly-weather (parse-naver-weather-html))
+      (info-to-string)
+      (message)))
 
 
 (defun has-attribute-value (attr-list value)
@@ -134,9 +136,16 @@
     new-buffer))
 
 
-(defun insert-title (buffer)
-  "Precondition: the buffer's major mode should be org-mode"
-  (insert "* Naver Weather"))
+(defun insert-title ()
+  "Insert the title for the org-buffer, and insert two newlines."
+  (insert "* Naver Weather")
+  (move-to-column (point-max))
+  (newline)
+  (newline))
+
+
+(defun display-org-buffer ()
+  (display-buffer "Naver Weather"))
 
 
 (defun create-org-table (buffer)
