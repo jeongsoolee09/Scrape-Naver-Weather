@@ -94,7 +94,7 @@
 
 
 (defun info-to-string (info)
-  (info-to-string-inner "" (seq-take info 13)))
+  (info-to-string-inner "" (seq-take info 5)))
 
 
 (defun display-hourly-weather ()
@@ -136,25 +136,39 @@
     new-buffer))
 
 
-(defun insert-title ()
+(defun insert-title (buffer)
   "Insert the title for the org-buffer, and insert two newlines."
-  (insert "* Naver Weather")
-  (move-to-column (point-max))
-  (newline)
-  (newline))
+  (with-current-buffer buffer
+      (insert "* Naver Weather")
+    (move-to-column (point-max))
+    (newline)
+    (newline))
+  buffer)
 
 
-(defun display-org-buffer ()
-  (display-buffer "Naver Weather"))
+(defun weather-data->org-table-inner (acc weather-data)
+  (if (null weather-data)
+      acc
+    (progn
+      (destructuring-bind (temp date weather) (car weather-data)
+        (let ((concatted (concat acc "| " date " | " weather " | " temp " |\n")))
+          (weather-data->org-table-inner concatted (cdr weather-data)))))))
 
 
-(defun create-org-table (buffer)
-  ;; TODO
-  )
+;; borken
+(defun weather-data->org-table (buffer weather-data)
+  (with-current-buffer buffer
+    (let* ((concatted (weather-data->org-table-inner "" weather-data)))
+      (insert concatted)
+      (org-table-align)))
+  buffer)
 
 
-;; TODO draw a nice table containing information retrieved by get-hourly-weather.
-;; TODO find a means to calculate the table width
+(defun display-org-buffer (weather-data)
+  (-> (create-buffer)
+      (insert-title)
+      (weather-data->org-table weather-data)
+      (display-buffer)))
 
 
 ;;; scrape_weather.el ends here
