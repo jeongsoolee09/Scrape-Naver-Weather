@@ -155,13 +155,32 @@
           (weather-data->org-table-inner concatted (cdr weather-data)))))))
 
 
-;; borken
 (defun weather-data->org-table (buffer weather-data)
   (with-current-buffer buffer
     (let* ((concatted (weather-data->org-table-inner "" weather-data)))
-      (insert concatted)
-      (org-table-align)))
+      (progn
+        (insert concatted)
+        (org-table-align)
+        (previous-line)
+        (org-table-insert-hline)
+        (insert-hline-at-top))))
   buffer)
+
+
+(defun goto-top-of-table ()
+  (goto-char (org-table-begin)))
+
+
+;; borken
+(defun insert-hline-at-top ()           ; NOTE precondition: the cursor should be at an org-table
+  (progn
+    (save-excursion
+      (goto-top-of-table)
+      (org-table-insert-hline)
+      (kill-line)
+      (next-line 2)
+      (org-yank)
+      (newline))))
 
 
 (defun display-org-buffer (weather-data)
@@ -169,6 +188,12 @@
       (insert-title)
       (weather-data->org-table weather-data)
       (display-buffer)))
+
+
+(display-org-buffer (get-hourly-weather (parse-naver-weather-html)))
+
+
+;; TODO 1. 미세먼지, 초미세먼지, 자외선 나타내기
 
 
 ;;; scrape_weather.el ends here
