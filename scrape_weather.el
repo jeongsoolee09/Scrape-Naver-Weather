@@ -111,7 +111,7 @@
 
 
 (defun extract-sunset-uv-fd-ufd (ul)
-  (assert (has-attribute-value (get-attribute-list ul) "today_chart_list"))  ; attribute 중에 "today_chart_list"가 있는지 확인
+  (assert (has-attribute-value (get-attribute-list ul) "today_chart_list"))
   (let* ((raw-data (find-by-tag ul 'strong))
          (data (mapcar #'caddr raw-data))
          (raw-values (find-by-tag ul 'em))
@@ -119,9 +119,12 @@
     (-zip data values)))
 
 
-(defun get-sunset-uv-fd-ufd ()
+(defun get-sunset-uv-fd-ufd (parsed-html)
   (interactive)
-  (let ((ul (find-by-tag-and-attribute (parse-naver-weather-html) 'ul '(class . "today_chart_list"))))
+  (let ((ul (find-by-tag-and-attribute
+             parsed-html
+             'ul
+             '(class . "today_chart_list"))))
     (extract-sunset-uv-fd-ufd (car ul))))
 
 
@@ -157,7 +160,7 @@
 
 (defun weather-data->org-table (buffer weather-data)
   (with-current-buffer buffer
-    (let* ((concatted (weather-data->org-table-inner "" weather-data)))
+    (let ((concatted (weather-data->org-table-inner "" weather-data)))
       (progn
         (insert concatted)
         (org-table-align)
@@ -171,29 +174,64 @@
   (goto-char (org-table-begin)))
 
 
-;; borken
-(defun insert-hline-at-top ()           ; NOTE precondition: the cursor should be at an org-table
-  (progn
-    (save-excursion
+(defun insert-hline-at-top ()
+  (let ((current-prefix-arg 4))         ; emulate C-u
+    (progn
       (goto-top-of-table)
-      (org-table-insert-hline)
-      (kill-line)
-      (next-line 2)
-      (org-yank)
-      (newline))))
+      (call-interactively 'org-table-insert-hline))))
 
 
-(defun display-org-buffer (weather-data)
+(defun finedust->org-table-inner (acc fd-data)
+  (if (null fd-data)
+      acc
+    (progn
+      (let* ((slice (car fd-data))
+             (index (car slice))
+             (value (cdr slice)))
+        (let ((concatted (concat acc "| " index "| " value "|\n")))
+          (finedust->org-table-inner concatted (cdr fd-data)))))))
+
+
+(defun finedust->org-table (buffer fd-data)
+  (with-current-buffer buffer
+    (let ((concatted (finedust->org-table-inner "" fd-data)))
+      (progn
+        (insert concatted)
+        (org-table-align)
+        (previous-line)
+        (org-table-insert-hline)
+        (insert-hline-at-top))))
+  buffer)
+
+
+(defun goto-end-effect (buffer)
+  (progn
+    (goto-char (point-max))
+    buffer))
+
+
+(defun insert-newline-effect (buffer)
+  (progn
+    (newline)
+    buffer))
+
+
+(defun display-org-buffer (weather-data fd-data)
   (-> (create-buffer)
       (insert-title)
       (weather-data->org-table weather-data)
+      (goto-end-effect)
+      (insert-newline-effect)
+      (finedust->org-table fd-data)
       (display-buffer)))
 
 
-(display-org-buffer (get-hourly-weather (parse-naver-weather-html)))
+(defun get-naver-weather ()
+  (interactive)
+  (display-org-buffer
+   (get-hourly-weather (parse-naver-weather-html))
+   (get-sunset-uv-fd-ufd (parse-naver-weather-html))))
 
 
-;; TODO 1. 미세먼지, 초미세먼지, 자외선 나타내기
-
-
+(provide 'scrape-naver-weather)
 ;;; scrape_weather.el ends here
