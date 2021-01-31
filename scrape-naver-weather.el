@@ -234,4 +234,5 @@
 
 
 (provide 'scrape-naver-weather)
+
 ;;; scrape_weather.el ends here
